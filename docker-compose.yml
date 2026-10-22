@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  claw-mongo:
+    image: mongo:latest
+    container_name: claw-mongo
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - cyberpup-net
+
+  cyberpup-security:
+    build:
+      context: ./security
+      dockerfile: Dockerfile
+    container_name: cyberpup-security
+    restart: always
+    volumes:
+      - sqlite_data:/app
+    environment:
+      SECURITY_BOT_TOKEN: ${SECURITY_BOT_TOKEN}
+      BOT_OWNER: ${BOT_OWNER}
+      GROUPS_LOGS: ${GROUPS_LOGS}
+      DB_PATH: /app/cyberpup_security.db
+    networks:
+      - cyberpup-net
+
+  cyberpup-core:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: cyberpup-core
+    restart: always
+    depends_on:
+      - claw-mongo
+    environment:
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
+      CORE_BOT_TOKEN: ${CORE_BOT_TOKEN}
+      MONGO_URL: mongodb://claw-mongo:27017
+      SUDOERS: ${SUDOERS}
+    networks:
+      - cyberpup-net
+
+volumes:
+  mongo_data:
+  sqlite_data:
+
+networks:
+  cyberpup-net:
+    driver: bridge
